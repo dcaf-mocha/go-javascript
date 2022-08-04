@@ -24,7 +24,7 @@ type QuoteEstimate struct {
 }
 
 func main() {
-	command := "node scripts/quote.js" +
+	command := "ts-node scripts/quote.ts" +
 		" CRR7huZnXaiBjGGMAU6iVeQU9b2g71NXiLHA6g29DeYN" +
 		" 57K3gMtUMctYGYUpm9PjzYQeiCV8BeRkSuuBFGkuWAdt" +
 		" Dphoc5nPvC5eadUP79McRB36hgKcetgJ7BRG5Zv6QeYp" +
@@ -32,6 +32,7 @@ func main() {
 	parts := strings.Fields(command)
 	data, err := exec.Command(parts[0], parts[1:]...).Output()
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	var quote QuoteEstimate
