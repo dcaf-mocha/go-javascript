@@ -1,64 +1,40 @@
 package main
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
-	"go.kuoruan.net/v8go-polyfills/fetch"
-	"rogchap.com/v8go"
-	"time"
+	"os/exec"
+	"strings"
 )
 
+type QuoteEstimate struct {
+	EstimatedAmountIn      string `json:"estimatedAmountIn"`
+	EstimatedAmountOut     string `json:"estimatedAmountOut"`
+	EstimatedEndTickIndex  int    `json:"estimatedEndTickIndex"`
+	EstimatedEndSqrtPrice  string `json:"estimatedEndSqrtPrice"`
+	EstimatedFeeAmount     string `json:"estimatedFeeAmount"`
+	Amount                 string `json:"amount"`
+	AmountSpecifiedIsInput bool   `json:"amountSpecifiedIsInput"`
+	AToB                   bool   `json:"aToB"`
+	OtherAmountThreshold   string `json:"otherAmountThreshold"`
+	SqrtPriceLimit         string `json:"sqrtPriceLimit"`
+	TickArray0             string `json:"tickArray0"`
+	TickArray1             string `json:"tickArray1"`
+	TickArray2             string `json:"tickArray2"`
+}
+
 func main() {
-	fmt.Println("hello world")
-
-	//ctx := v8.NewContext()                                  // creates a new V8 context with a new Isolate aka VM
-	//ctx.RunScript("const add = (a, b) => a + b", "math.js") // executes a script on the global context
-	//ctx.RunScript("const result = add(3, 4)", "main.js")    // any functions previously added to the context can be called
-	//val, _ := ctx.RunScript("result", "value.js")           // return a value in JavaScript back to Go
-	//fmt.Printf("addition result: %s", val)
-	//iso := v8.NewIsolate() // create a new VM
-	//// a template that represents a JS function
-	//printfn := v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
-	//	fmt.Printf("%v", info.Args()) // when the JS function is called this Go callback will execute
-	//	return nil                    // you can return a value back to the JS caller if required
-	//})
-	//global := v8.NewObjectTemplate(iso)       // a template that represents a JS Object
-	//global.Set("print", printfn)              // sets the "print" property of the Object to our function
-	//ctx := v8.NewContext(iso, global)         // new Context with the global Object set to our object template
-	//ctx.RunScript("print('foo')", "print.js") // will execute the Go callback with a single argunent 'foo'
-
-	iso := v8go.NewIsolate()
-	global := v8go.NewObjectTemplate(iso)
-
-	if err := fetch.InjectTo(iso, global); err != nil {
-		panic(err)
-	}
-
-	ctx := v8go.NewContext(iso, global)
-
-	val, err := ctx.RunScript("fetch('https://www.example.com').then(res => res.text())", "fetch.js")
+	command := "node scripts/quote.js" +
+		" CRR7huZnXaiBjGGMAU6iVeQU9b2g71NXiLHA6g29DeYN" +
+		" 57K3gMtUMctYGYUpm9PjzYQeiCV8BeRkSuuBFGkuWAdt" +
+		" Dphoc5nPvC5eadUP79McRB36hgKcetgJ7BRG5Zv6QeYp" +
+		" 57K3gMtUMctYGYUpm9PjzYQeiCV8BeRkSuuBFGkuWAdt"
+	parts := strings.Fields(command)
+	data, err := exec.Command(parts[0], parts[1:]...).Output()
 	if err != nil {
 		panic(err)
 	}
-
-	proms, err := val.AsPromise()
-	if err != nil {
-		panic(err)
-	}
-	done := make(chan bool, 1)
-
-	go func() {
-		for proms.State() == v8go.Pending {
-			continue
-		}
-		done <- true
-	}()
-
-	select {
-	case <-time.After(time.Second * 10):
-		panic(errors.New("request timeout"))
-	case <-done:
-		html := proms.Result().String()
-		fmt.Println(html)
-	}
+	var quote QuoteEstimate
+	json.Unmarshal(data, &quote)
+	fmt.Println(quote)
 }
